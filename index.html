@@ -1,0 +1,366 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Home, 
+  MapPin, 
+  ShoppingBag, 
+  User, 
+  Search, 
+  Bell, 
+  MessageSquare, 
+  Share2, 
+  Heart, 
+  Languages,
+  ArrowRight,
+  MoreVertical,
+  Plus
+} from 'lucide-react';
+
+// --- Mock Data ---
+const MOCK_POSTS = [
+  {
+    id: 1,
+    author: "Lotuence Dube",
+    location: "Cape Town, South Africa",
+    coordinates: 0,
+    avatar: "LD",
+    content: "Just finished this pastel sketch of a Cheetah at sunrise. The light in the Cape is unmatched today. #WildlifeArt #Alyakim",
+    image: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=1000",
+    likes: 1204,
+    comments: 45,
+    isMarketplace: true,
+    price: "45.00",
+    currency: "USD",
+    translation: "Acabo de terminar este boceto al pastel de un guepardo al amanecer. La luz en el Cabo no tiene rival hoy."
+  },
+  {
+    id: 2,
+    author: "Zainab Al-Masri",
+    location: "Cairo, Egypt",
+    coordinates: 100,
+    avatar: "ZA",
+    content: "Morning coffee overlooking the Nile. Planning my next architectural series. Who else is working from the balcony today?",
+    image: "https://images.unsplash.com/photo-1572208480445-139206cc431d?auto=format&fit=crop&q=80&w=1000",
+    likes: 892,
+    comments: 32,
+    isMarketplace: false,
+    translation: "قهوة الصباح المطلة على النيل. التخطيط لسلسلتي المعمارية القادمة. من غيرك يعمل من الشرفة اليوم؟"
+  },
+  {
+    id: 3,
+    author: "Kofi Mensah",
+    location: "Nairobi, Kenya",
+    coordinates: 60,
+    avatar: "KM",
+    content: "The tech scene in Nairobi is booming! Just met three new founders at the hub. The connection from South to North is real. 🚀",
+    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1000",
+    likes: 567,
+    comments: 12,
+    isMarketplace: false,
+    translation: "المشهد التكنولوجي في نيروبي يزدهر! التقيت للتو بثلاثة مؤسسين جدد في المركز."
+  },
+  {
+    id: 4,
+    author: "Sasha Mumba",
+    location: "Lusaka, Zambia",
+    coordinates: 35,
+    avatar: "SM",
+    content: "New handmade copper jewelry set inspired by the Victoria Falls. Available now for delivery across the SADC region.",
+    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&q=80&w=1000",
+    likes: 432,
+    comments: 28,
+    isMarketplace: true,
+    price: "25.00",
+    currency: "USD",
+    translation: "مجموعة مجوهرات نحاسية جديدة مصنوعة يدويًا مستوحاة من شلالات فيكتوريا."
+  }
+];
+
+// --- Sub-components ---
+
+const Header = () => (
+  <header className="sticky top-0 z-50 bg-[#F8F7F3]/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <div className="flex items-center gap-2">
+      <div className="w-10 h-10 bg-gradient-to-br from-[#C88A4B] to-[#E6BC7E] rounded-xl flex items-center justify-center shadow-md">
+        <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 85V35C50 25 40 15 30 15M50 85V35C50 25 60 15 70 15" stroke="white" strokeWidth="10" strokeLinecap="round"/>
+        </svg>
+      </div>
+      <h1 className="text-2xl font-bold tracking-tighter text-[#2A2F33] hidden sm:block uppercase">Alyakim</h1>
+    </div>
+    
+    <div className="flex-1 max-w-md mx-4 relative hidden md:block">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+      <input 
+        type="text" 
+        placeholder="Search the continent..." 
+        className="w-full bg-white border border-gray-200 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#E6BC7E] transition-all"
+      />
+    </div>
+
+    <div className="flex items-center gap-3 sm:gap-5">
+      <Bell size={24} className="text-gray-600 cursor-pointer hover:text-[#C88A4B]" />
+      <MessageSquare size={24} className="text-gray-600 cursor-pointer hover:text-[#C88A4B]" />
+      <div className="w-10 h-10 rounded-full bg-[#E6BC7E] border-2 border-white shadow-sm flex items-center justify-center text-white font-bold cursor-pointer">
+        LD
+      </div>
+    </div>
+  </header>
+);
+
+const NavItem = ({ icon: Icon, label, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`flex flex-col md:flex-row items-center gap-1 md:gap-4 px-3 py-2 md:py-3 rounded-xl transition-all w-full
+      ${active ? 'text-[#C88A4B] md:bg-orange-50 font-bold' : 'text-gray-500 hover:bg-gray-100'}`}
+  >
+    <Icon size={24} />
+    <span className="text-[10px] md:text-base font-medium">{label}</span>
+  </button>
+);
+
+const RouteSlider = ({ value, onChange }) => (
+  <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
+    <div className="flex justify-between items-center mb-4">
+      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Route Navigation</span>
+      <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full text-[#8C5A2B] text-xs font-bold">
+        <MapPin size={12} />
+        {value === 0 ? "Cape Town" : value === 100 ? "Cairo" : "En Route"}
+      </div>
+    </div>
+    <div className="relative h-12 flex items-center">
+      <div className="absolute inset-0 h-2 bg-gray-100 rounded-full top-1/2 -translate-y-1/2"></div>
+      <div 
+        className="absolute h-2 bg-gradient-to-r from-[#C88A4B] to-[#E6BC7E] rounded-full top-1/2 -translate-y-1/2 transition-all duration-300"
+        style={{ width: `${value}%` }}
+      ></div>
+      <input 
+        type="range" 
+        min="0" 
+        max="100" 
+        value={value} 
+        onChange={(e) => onChange(parseInt(e.target.value))}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      />
+      <div 
+        className="absolute w-8 h-8 bg-white border-4 border-[#C88A4B] rounded-full shadow-lg pointer-events-none transition-all duration-300 transform -translate-x-1/2"
+        style={{ left: `${value}%`, top: '50%', marginTop: '-16px' }}
+      >
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="w-1.5 h-1.5 bg-[#C88A4B] rounded-full"></div>
+        </div>
+      </div>
+    </div>
+    <div className="flex justify-between mt-2 px-1 text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+      <span>Cap</span>
+      <span>Lusaka</span>
+      <span>Nairobi</span>
+      <span>Khartoum</span>
+      <span>Cairo</span>
+    </div>
+  </div>
+);
+
+const Post = ({ post }) => {
+  const [translated, setTranslated] = useState(false);
+
+  return (
+    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden mb-6">
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-[#8C5A2B]">
+            {post.avatar}
+          </div>
+          <div>
+            <h4 className="font-bold text-sm text-[#2A2F33]">{post.author}</h4>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <MapPin size={10} /> {post.location}
+            </p>
+          </div>
+        </div>
+        <MoreVertical size={18} className="text-gray-400 cursor-pointer" />
+      </div>
+
+      <div className="px-4 pb-4">
+        <p className="text-sm leading-relaxed text-gray-700 mb-4">
+          {translated ? post.translation : post.content}
+        </p>
+        <button 
+          onClick={() => setTranslated(!translated)}
+          className="flex items-center gap-2 text-xs font-bold text-[#C88A4B] mb-4 hover:underline"
+        >
+          <Languages size={14} />
+          {translated ? "Show Original" : "Translate"}
+        </button>
+      </div>
+
+      <div className="relative aspect-video bg-gray-100">
+        <img src={post.image} alt="Post content" className="w-full h-full object-cover" />
+        {post.isMarketplace && (
+          <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 border border-[#E6BC7E]/30">
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase font-bold">Price</p>
+              <p className="font-bold text-[#8C5A2B]">${post.price}</p>
+            </div>
+            <button className="bg-[#C88A4B] text-white p-2 rounded-xl hover:bg-[#8C5A2B] transition-colors">
+              <ShoppingBag size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <button className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 transition-colors">
+            <Heart size={20} />
+            <span className="text-xs font-bold">{post.likes}</span>
+          </button>
+          <button className="flex items-center gap-1.5 text-gray-500 hover:text-[#C88A4B] transition-colors">
+            <MessageSquare size={20} />
+            <span className="text-xs font-bold">{post.comments}</span>
+          </button>
+        </div>
+        <Share2 size={20} className="text-gray-400 cursor-pointer hover:text-[#C88A4B]" />
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [routeProgress, setRouteProgress] = useState(0); // 0 to 100
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const filteredPosts = useMemo(() => {
+    // Show posts within +/- 40% of the current route progress to give a sense of "moving" through content
+    return MOCK_POSTS.filter(post => 
+      Math.abs(post.coordinates - routeProgress) <= 40
+    );
+  }, [routeProgress]);
+
+  return (
+    <div className="min-h-screen bg-[#F8F7F3] flex flex-col md:flex-row">
+      
+      {/* Sidebar - Desktop */}
+      {!isMobile && (
+        <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 p-6 flex flex-col justify-between">
+          <div className="space-y-8">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#C88A4B] to-[#E6BC7E] rounded-2xl flex items-center justify-center shadow-lg">
+                <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 85V35C50 25 40 15 30 15M50 85V35C50 25 60 15 70 15" stroke="white" strokeWidth="10" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span className="text-2xl font-black tracking-tighter text-[#2A2F33] uppercase">Alyakim</span>
+            </div>
+
+            <nav className="space-y-2">
+              <NavItem icon={Home} label="Feed" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+              <NavItem icon={MapPin} label="Route Map" active={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+              <NavItem icon={ShoppingBag} label="Market" active={activeTab === 'market'} onClick={() => setActiveTab('market')} />
+              <NavItem icon={User} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+            </nav>
+          </div>
+
+          <button className="bg-[#C88A4B] text-white w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#C88A4B]/20 hover:bg-[#8C5A2B] transition-all transform hover:scale-105 active:scale-95">
+            <Plus size={20} />
+            Post Something
+          </button>
+        </aside>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        <Header />
+        
+        <main className="flex-1 max-w-2xl mx-auto w-full p-4 md:p-8 pb-24 md:pb-8">
+          
+          {activeTab === 'home' && (
+            <>
+              <RouteSlider value={routeProgress} onChange={setRouteProgress} />
+              
+              <div className="mb-8 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {routeProgress < 25 ? "Southern Africa Feed" : 
+                   routeProgress < 75 ? "Central & East Africa" : 
+                   "North Africa Feed"}
+                </h2>
+                <div className="flex items-center gap-2 text-xs font-bold text-[#C88A4B]">
+                  <ArrowRight size={14} />
+                  Showing {filteredPosts.length} matches en route
+                </div>
+              </div>
+
+              {filteredPosts.length > 0 ? (
+                filteredPosts.map(post => <Post key={post.id} post={post} />)
+              ) : (
+                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200">
+                  <MapPin className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-400 font-medium">No posts in this stretch of the route yet.<br/>Be the first to establish a foundation here.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'market' && (
+            <div className="grid grid-cols-1 gap-6">
+              <h2 className="text-3xl font-bold mb-4">Alyakim Market</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {MOCK_POSTS.filter(p => p.isMarketplace).map(product => (
+                  <div key={product.id} className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+                    <img src={product.image} className="w-full aspect-square object-cover rounded-xl mb-3" />
+                    <h4 className="font-bold text-sm truncate">{product.author}'s Craft</h4>
+                    <p className="text-lg font-black text-[#C88A4B]">${product.price}</p>
+                    <button className="w-full mt-3 bg-gray-50 py-2 rounded-xl text-xs font-bold hover:bg-orange-50 hover:text-[#C88A4B] transition-all">View Details</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(activeTab === 'map' || activeTab === 'profile') && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-[#C88A4B] mb-4">
+                <Search size={32} />
+              </div>
+              <h3 className="text-xl font-bold">Coming Soon</h3>
+              <p className="text-gray-500 text-center mt-2 max-w-xs">We are currently establishing this section of the Alyakim foundation.</p>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Mobile Bottom Nav */}
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 px-4 py-2 flex justify-between items-center z-50">
+          <NavItem icon={Home} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+          <NavItem icon={MapPin} label="Route" active={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+          <div className="relative -top-6">
+            <button className="w-14 h-14 bg-gradient-to-br from-[#C88A4B] to-[#E6BC7E] rounded-full flex items-center justify-center text-white shadow-lg shadow-orange-200 active:scale-90 transition-transform">
+              <Plus size={28} />
+            </button>
+          </div>
+          <NavItem icon={ShoppingBag} label="Market" active={activeTab === 'market'} onClick={() => setActiveTab('market')} />
+          <NavItem icon={User} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+        </nav>
+      )}
+
+      {/* Floating Art Inspiration (Visual Texture) */}
+      <div className="fixed bottom-24 right-8 pointer-events-none opacity-10 hidden xl:block">
+         <svg width="300" height="300" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" stroke="#C88A4B" strokeWidth="0.5" fill="none" />
+            <path d="M50 10 Q 70 50 50 90" stroke="#C88A4B" strokeWidth="0.2" fill="none" />
+            <path d="M50 10 Q 30 50 50 90" stroke="#C88A4B" strokeWidth="0.2" fill="none" />
+         </svg>
+      </div>
+    </div>
+  );
+}
